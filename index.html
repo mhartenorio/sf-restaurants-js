@@ -2,16 +2,17 @@
 <html>
 
 <head>
-  <meta charset="utf-8" />
+  <!-- <meta charset="utf-8" /> -->
   <title>CS 448B Assignment 3</title>
-  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <!-- <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" /> -->
   <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.js"></script>
-  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
   <link href="https://api.tiles.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.css" rel="stylesheet" />
   <style>
     body {
       margin: 0;
       padding: 0;
+      font-family: Arial, Helvetica, sans-serif;
     }
 
     #map {
@@ -20,56 +21,82 @@
       bottom: 0;
       width: 100%;
     }
+
+    #filters {
+      position: fixed;
+      overflow-y: auto;
+      top: 24px;
+      left: 24px;
+      width: 300px;
+      padding: 24px;
+      height: calc(100vh - 24px - 24px - 24px - 24px);
+      background-color: white;
+      z-index: 100;
+      border-radius: 16px;
+      box-shadow:
+        3.2px 3.3px 5.3px rgba(0, 0, 0, 0.012),
+        10.7px 10.9px 17.9px rgba(0, 0, 0, 0.018),
+        48px 49px 80px rgba(0, 0, 0, 0.03);
+    }
   </style>
 </head>
 
 <body>
   <div id="map"></div>
+  <div id="filters">
+    <h2>CS 448B Assignment 3</h2>
+
+    <p>This shows all Coffee Shops, Cafes, and Bubble Tea Shops in the Bay Area sourced from Yelp.</p>
+    <p>Use the two circles to show shops that lie in the intersection. You can also filter your data using the following
+      settings below</p>
+    <h3>Filters</h3>
+    <h4>Price Range 💰</h4>
+    <input type="checkbox" name="price" value="$">$</input><br />
+    <input type="checkbox" name="price" value="$$">$$</input><br />
+    <input type="checkbox" name="price" value="$$$">$$$</input><br />
+    <input type="checkbox" name="price" value="$$$$">$$$$</input><br />
+    <!-- <input type="checkbox" name="price" value="All" checked>View All</input><br /> -->
+    <h4>Ratings ⭐</h4>
+    <input type="checkbox" name="rating" value="4">4.0 - 5.0</input><br />
+    <input type="checkbox" name="rating" value="3">3.0 - 3.99</input><br />
+    <input type="checkbox" name="rating" value="2">2.0 - 2.99</input><br />
+    <input type="checkbox" name="rating" value="1">1.0 - 1.99</input><br />
+    <input type="checkbox" name="rating" value="0">0 - 0.99</input><br />
+    <!-- <input type="checkbox" name="rating" value="All" checked>View All</input><br /> -->
+    <h3>Results</h3>
+  </div>
   <script>
     mapboxgl.accessToken = "pk.eyJ1IjoibWhhcnRlbm9yaW8iLCJhIjoiY2xkeXh0MzRnMG9tdjNwb3ZzdmI5aDlxbCJ9.QeyPN0ZvTHLHTH4oDqFx6g";
     var map;
-    const data = d3
-      .csv(
-        "https://raw.githubusercontent.com/mhartenorio/sf-restaurants-js/main/asst3_yelp.csv",
-        function (d) {
-          let coordinates = d.coordinates;
-          let coordArr = coordinates.split(",");
-          coordArr[0] = parseFloat(coordArr[0]);
-          coordArr[1] = parseFloat(coordArr[1]);
-          d.coordinates = coordArr.reverse();
-          //console.log(d)
-          return d;
-        }
-      )
-      .then(createMap)
-      .then(createDots);
+    map = new mapboxgl.Map({
+      container: "map", // container id
+      style: "mapbox://styles/mapbox/light-v9", // stylesheet location
+      zoom: 9, // starting zoom
+      center: [-122.3239, 37.6955],
+      interactive: false,
+    });
+    map.on("viewreset", render);
+    map.on("move", render);
+    map.on("moveend", render);
 
-    function createMap(data) {
-      map = new mapboxgl.Map({
-        container: "map", // container id
-        style: "mapbox://styles/mapbox/light-v9", // stylesheet location
-        zoom: 9, // starting zoom
-        center: [-122.0739, 37.6955],
-        //interactive: false,
-      });
 
-      map.on("viewreset", render);
-      map.on("move", render);
-      map.on("moveend", render);
-
-      // Optional: Modify map with d3
-      d3.selectAll(".mapboxgl-canvas")
-        .style("opacity", 1)
-        .style("position", "absolute")
-        .style("z-index", 1);
-      return data;
-    }
+    data = d3.csv("https://raw.githubusercontent.com/mhartenorio/sf-restaurants-js/main/asst3_yelp.csv",
+      function (d) {
+        let coordinates = d.coordinates;
+        let coordArr = coordinates.split(",");
+        coordArr[0] = parseFloat(coordArr[0]);
+        coordArr[1] = parseFloat(coordArr[1]);
+        d.coordinates = coordArr.reverse();
+        d.rating = parseFloat(d.rating);
+        //console.log(d)
+        return d;
+      }
+    ).then(createDots);
 
     function createDots(data) {
       var container = map.getCanvasContainer();
-      //let coordinates = data.map(d => d.coordinates);
-      // console.log(coordinates)
-      // console.log(data)
+      // let coordinates = data.map(d => d.coordinates);
+
       var svg = d3
         .select(container)
         .append("svg")
@@ -86,28 +113,110 @@
         .append("circle")
         .attr("class", "circle")
         .attr("r", 5)
-        .style("opacity", 0.7)
-        .style("fill", "black");
+        .style("opacity", 0.3)
+        .style("fill", "gray");
 
-      render();
-    }
+      showResults(data)
+      render()
 
-    // Projection method:
-    // Project geojson coordinate to the map's current state
-    function project(d) {
-      return map.project(new mapboxgl.LngLat(d[0], d[1]));
-    }
 
-    // Render method redraws lines
-    function render() {
-      d3.selectAll(".circle")
-        .attr("cx", function (d) {
-          return project(d.coordinates).x;
+      function updateDots(priceFilters) {
+        let tempData = data;
+        
+        tempData = tempData.filter(d => {
+          let numFalse = 0;
+          for (const property in priceFilters) {
+            if (priceFilters[property]) {
+              if (d.price === property) {
+                return true;
+              }
+            } else {
+              numFalse += 1;
+            }
+          }
+          if (numFalse === 4) {
+            return true
+          } else {
+          return false;
+        }
         })
-        .attr("cy", function (d) {
-          return project(d.coordinates).y;
-        });
+        console.log(tempData)
+        
+        d3.selectAll("circle").remove();
+        d3.selectAll("#resultsDiv").remove();
+        svg
+        .selectAll("circle")
+        .data(tempData)
+        .enter()
+        .append("circle")
+        .attr("class", "circle")
+        .attr("r", 5)
+        .style("opacity", 0.3)
+        .style("fill", "gray");
+        showResults(tempData);
+        render()
+      }
+
+      function showResults(data) {
+        console.log(data)
+        let resultsDiv = d3.select("#filters").append("div").attr("id", "resultsDiv")
+        for (let i = 0; i < data.length; i++) {
+          var singleData = resultsDiv.append("div").attr("style", "margin-bottom: 16px")
+            .append('h4').text(data[i].name)
+            .append("body").attr("style", "font-weight: 100").text("Reviews: " + data[i].rating + " ⭐ (" + data[i].review_count + ")")
+          // .append("body").attr("style", "font-weight: 100").text(data[i].address)
+
+          if (data[i].price) {
+            singleData.append("body").attr("style", "font-weight: 100").text("Price range: " + data[i].price)
+          }
+
+          if (data[i].address) {
+            // let fixedaddr = data[i].address.replaceAll("O'", "O ").replaceAll('""', "'")
+            // let addr = JSON.parse(JSON.stringify(fixedaddr));
+            // console.log(addr)
+            // str = addr.replaceAll(/'/g, '"')
+            // console.log(typeof JSON.parse(str))
+            singleData.append("body").attr("style", "font-weight: 100").text(data[i].address)
+
+          }
+          // var img = document.createElement("img");
+          // img.src = data[i].image_url;
+          // img.width = "64px";
+          // img.height = "64px";
+          // document.getElementById("filters").appendChild(img);
+        }
+      }
+
+      let priceFilters = { "$": false, "$$": false, "$$$": false, "$$$$": false }
+
+      d3.selectAll("input[name='price']").on("change", function () {
+        priceFilters[this.value] = this.checked;
+        updateDots(priceFilters);
+
+      });
+
+      d3.selectAll("input[name='rating']").on("change", function () {
+        console.log(this.value)
+      });
+
+      // render();
     }
+
+    function project(d) {
+        return map.project(new mapboxgl.LngLat(d[0], d[1]));
+      }
+
+      function render() {
+        d3.selectAll(".circle")
+          .attr("cx", function (d) {
+            return project(d.coordinates).x;
+          })
+          .attr("cy", function (d) {
+            return project(d.coordinates).y;
+          });
+      }
+
+
   </script>
 </body>
 
