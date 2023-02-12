@@ -48,7 +48,7 @@
 
     <p>This shows all Coffee Shops, Cafes, and Bubble Tea Shops in the Bay Area sourced from Yelp.</p>
     <p>Use the two circles to show shops that lie in the intersection. You can also filter your data using the following
-      settings below</p>
+      settings below.</p>
     <h3>Filters</h3>
     <h4>Price Range 💰</h4>
     <input type="checkbox" name="price" value="$">$</input><br />
@@ -120,9 +120,9 @@
       render()
 
 
-      function updateDots(priceFilters) {
+      function updateDots(priceFilters, ratingFilters) {
         let tempData = data;
-        
+
         tempData = tempData.filter(d => {
           let numFalse = 0;
           for (const property in priceFilters) {
@@ -137,22 +137,39 @@
           if (numFalse === 4) {
             return true
           } else {
-          return false;
-        }
+            return false;
+          }
         })
-        console.log(tempData)
-        
+
+        tempData = tempData.filter(d => {
+          let numFalse = 0;
+          for (const property in ratingFilters) {
+            if (ratingFilters[property]) {
+              if (d.rating >= parseFloat(property) && d.rating <= (parseFloat(property) + 0.99)) {
+                return true;
+              }
+            } else {
+              numFalse += 1;
+            }
+          }
+          if (numFalse === 5) {
+            return true
+          } else {
+            return false;
+          }
+        })
+
         d3.selectAll("circle").remove();
         d3.selectAll("#resultsDiv").remove();
         svg
-        .selectAll("circle")
-        .data(tempData)
-        .enter()
-        .append("circle")
-        .attr("class", "circle")
-        .attr("r", 5)
-        .style("opacity", 0.3)
-        .style("fill", "gray");
+          .selectAll("circle")
+          .data(tempData)
+          .enter()
+          .append("circle")
+          .attr("class", "circle")
+          .attr("r", 5)
+          .style("opacity", 0.3)
+          .style("fill", "gray");
         showResults(tempData);
         render()
       }
@@ -188,33 +205,35 @@
       }
 
       let priceFilters = { "$": false, "$$": false, "$$$": false, "$$$$": false }
+      let ratingFilters = { "0": false, "1": false, "2": false, "3": false, "4": false }
 
       d3.selectAll("input[name='price']").on("change", function () {
         priceFilters[this.value] = this.checked;
-        updateDots(priceFilters);
+        updateDots(priceFilters, ratingFilters);
 
       });
 
       d3.selectAll("input[name='rating']").on("change", function () {
-        console.log(this.value)
+        ratingFilters[this.value] = this.checked;
+        updateDots(priceFilters, ratingFilters);
       });
 
       // render();
     }
 
     function project(d) {
-        return map.project(new mapboxgl.LngLat(d[0], d[1]));
-      }
+      return map.project(new mapboxgl.LngLat(d[0], d[1]));
+    }
 
-      function render() {
-        d3.selectAll(".circle")
-          .attr("cx", function (d) {
-            return project(d.coordinates).x;
-          })
-          .attr("cy", function (d) {
-            return project(d.coordinates).y;
-          });
-      }
+    function render() {
+      d3.selectAll(".circle")
+        .attr("cx", function (d) {
+          return project(d.coordinates).x;
+        })
+        .attr("cy", function (d) {
+          return project(d.coordinates).y;
+        });
+    }
 
 
   </script>
