@@ -2,7 +2,7 @@
 <html>
 
 <head>
-  <!-- <meta charset="utf-8" /> -->
+  <meta charset="utf-8" />
   <title>CS 448B Assignment 3</title>
   <!-- <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" /> -->
   <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.js"></script>
@@ -49,16 +49,17 @@
     <h2>CS 448B Assignment 3</h2>
 
     <p>This shows all Coffee Shops, Cafes, and Bubble Tea Shops in the Bay Area sourced from Yelp.</p>
-    <p>Use the two circles to show shops that lie in the intersection. You can also filter your data using the following
+    <p>You can visit the Yelp site for each store by clicking any points on the map. Use the two circles to show shops
+      that lie in the intersection of the two circles. You can also filter your data using the following
       settings below.</p>
     <h3>Filters</h3>
-    <h4>Price Range 💰</h4>
+    <h4>Price Range &#128176;</h4>
     <input type="checkbox" name="price" value="$">$</input><br />
     <input type="checkbox" name="price" value="$$">$$</input><br />
     <input type="checkbox" name="price" value="$$$">$$$</input><br />
     <input type="checkbox" name="price" value="$$$$">$$$$</input><br />
     <!-- <input type="checkbox" name="price" value="All" checked>View All</input><br /> -->
-    <h4>Ratings ⭐</h4>
+    <h4>Ratings &#11088;</h4>
     <input type="checkbox" name="rating" value="4">4.0 - 5.0</input><br />
     <input type="checkbox" name="rating" value="3">3.0 - 3.99</input><br />
     <input type="checkbox" name="rating" value="2">2.0 - 2.99</input><br />
@@ -76,7 +77,7 @@
       style: "mapbox://styles/mapbox/light-v9", // stylesheet location
       zoom: 9, // starting zoom
       center: [-122.3239, 37.6955],
-      interactive: false,
+      // interactive: false,
     });
     map.on("viewreset", render);
     map.on("move", render);
@@ -100,7 +101,20 @@
       .attr('class', 'd3-tip')
       .offset([-10, 0])
       .html(function (e, d) {
-        return "<strong>Name:</strong> <span style='color:red'>" + d.name + "</span>";
+        let htmlStr = "<div style='display:flex;flex-direction:row;column-gap:8px'>"
+
+        if (d.image_url) {
+          htmlStr += "<img src='" + d.image_url + "' width='64px' height='64px' onerror='this.onerror=null;this.src=''/>"
+        }
+        htmlStr += "<div><strong>" + d.name + "</strong>";
+        if (d.rating) {
+          htmlStr += "<br/><i>&#11088; Rating: </i> <span>" + d.rating + " " + '&#11088;' + " (" + d.review_count + ") </span>"
+        }
+        if (d.price) {
+          htmlStr += "<br/><i>&#128176; Price: </i> <span>" + d.price + " " + '' + "</span>"
+        }
+        htmlStr += "</div> </div>"
+        return htmlStr
       })
       .attr("style", "z-index: 1000");
 
@@ -130,8 +144,20 @@
         .attr("r", 5)
         .style("opacity", 0.3)
         .style("fill", "gray")
-        .on('mouseover', tooltip.show)
-        .on('mouseout', tooltip.hide);
+        // .on('mouseover', tooltip.show)
+        // .on('mouseout', tooltip.hide);
+        .on("mouseover", function (e, d) {
+          d3.select(this).style("fill", "red");
+          d3.select(this).style("cursor", "pointer");
+          tooltip.show(e, d);
+        })
+        .on("mousedown", function (e, d) {
+          window.open(d.url);
+        })
+        .on("mouseout", function (e, d) {
+          d3.select(this).style("fill", "gray");
+          tooltip.hide(e, d);
+        });
 
 
 
@@ -188,9 +214,21 @@
           .attr("class", "circle")
           .attr("r", 5)
           .style("opacity", 0.3)
-          .style("fill", "gray");
+          .style("fill", "gray")
+          .on("mouseover", function (e, d) {
+            d3.select(this).style("fill", "red");
+            d3.select(this).style("cursor", "pointer");
+            tooltip.show(e, d);
+          })
+          .on("mousedown", function (e, d) {
+            window.open(d.url);
+          })
+          .on("mouseout", function (e, d) {
+            d3.select(this).style("fill", "gray");
+            tooltip.hide(e, d);
+          });
         showResults(tempData);
-        render()
+        render();
       }
 
       function showResults(data) {
@@ -199,7 +237,7 @@
         for (let i = 0; i < data.length; i++) {
           var singleData = resultsDiv.append("div").attr("style", "margin-bottom: 16px")
             .append('h4').text(data[i].name)
-            .append("body").attr("style", "font-weight: 100").text("Ratings: " + data[i].rating + " ⭐ (" + data[i].review_count + ")")
+            .append("body").attr("style", "font-weight: 100").html("Ratings: " + data[i].rating + " &#11088; (" + data[i].review_count + ")")
           // .append("body").attr("style", "font-weight: 100").text(data[i].address)
 
           if (data[i].price) {
@@ -215,11 +253,26 @@
             singleData.append("body").attr("style", "font-weight: 100").text(data[i].address)
 
           }
-          // var img = document.createElement("img");
-          // img.src = data[i].image_url;
-          // img.width = "64px";
-          // img.height = "64px";
-          // document.getElementById("filters").appendChild(img);
+          // singleData.html(function (e, d) {
+          //   //console.log(data[i])
+          //   let htmlStr = '';
+
+          //   if (d.image_url) {
+          //     htmlStr += "<img src='" + data[i].image_url + "' width='64px' height='64px' onerror='this.onerror=null;this.src=''/>"
+          //   }
+
+          //   return htmlStr
+          // })
+          // if (data[i].image_url) {
+          //   var img = document.createElement("img");
+          //   img.src = data[i].image_url;
+          //   // img.src = "https://static.vecteezy.com/system/resources/previews/007/126/739/original/question-mark-icon-free-vector.jpg"
+          //   img.width = "64px";
+          //   img.height = "64px";
+          //   img.onerror = "this.onerror=null;this.src=''";
+          //   document.getElementById("resultsDiv").appendChild(img);
+          //   // singleData.append(img)
+          // }
         }
       }
 
@@ -236,10 +289,9 @@
         ratingFilters[this.value] = this.checked;
         updateDots(priceFilters, ratingFilters);
       });
-
-      // render();
     }
 
+    // Inspiration from https://franksh.com/posts/d3-mapboxgl/
     function project(d) {
       return map.project(new mapboxgl.LngLat(d[0], d[1]));
     }
