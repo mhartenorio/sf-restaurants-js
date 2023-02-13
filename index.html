@@ -99,7 +99,7 @@
       style: "mapbox://styles/mapbox/light-v9", // stylesheet location
       zoom: 8.75, // starting zoom
       center: [-122.3239, 37.6955],
-      interactive: false,
+      // interactive: false,
     });
     map.dragRotate.disable();
     map.on("viewreset", render);
@@ -141,20 +141,10 @@
       })
       .attr("style", "z-index: 1000");
 
-    let circleA = { x: 0, y: 0, r: 1000 }
+    let circleA = [-122.3239, 37.6955];
+    let circleB = [-122.1239, 37.6955];
 
-    // D3 Documentation: https://observablehq.com/@d3/circle-dragging-i
-    var drag = d3.drag()
-      .on('start', function (event, d) {
-        d3.select(this).raise().style("fill", "lightblue");
-      })
-      .on("drag", function (event, d) {
-        d3.select(this).attr("cx", event.x).attr("cy", event.y);
-      })
-      .on('end', function (event, d) {
-        d3.select(this).lower();
-        d3.select(this).style("fill", "yellow");
-      });
+
 
     let zoom = d3.zoom()
       .on('zoom', handleZoom);
@@ -205,6 +195,7 @@
           // d3.select(this).raise();
           d3.select(this).style("fill", "red");
           d3.select(this).style("cursor", "pointer");
+          // console.log(d3.select(this).attr("cx"))
           tooltip.show(e, d);
         })
         .on("mousedown", function (e, d) {
@@ -234,6 +225,83 @@
       //   .style("position", "absolute")
       //   .style("z-index", 9);
 
+      // D3 Documentation: https://observablehq.com/@d3/circle-dragging-i
+      function mouseMove(e) {
+        // Prevent the default map drag behavior.
+        e.preventDefault();
+        let new_coords = project([e.lngLat.lng, e.lngLat.lat])
+        d3.select(this).attr("cx", new_coords.x).attr("cy", new_coords.y);
+        // map.on('mousemove', onMove);
+        // map.once('mouseup', onUp);
+      }
+      // map.on('touchmove', (e) => console.log(e))
+      var drag = d3.drag()
+        .on('start', function (event, d) {
+          d3.select(this).raise().style("fill", "lightblue");
+          // map.on('touchmove', (e) => console.log(e.lngLat))
+          // d3.select(this).call(() => 
+          //   map.on('mousedown', (e) => {
+          //   // Prevent the default map drag behavior.
+          //   // e.preventDefault();
+          //   console.log("start")
+          //   map.on('mousemove', (e) => {
+          //   // e.preventDefault();
+          //   let new_coords = project([e.lngLat.lng, e.lngLat.lat])
+          //   // console.log(new_coords)
+          //   // d3.select(this).raise().style("fill", "lightblue");
+          //   // d3.select(this).attr("cx", new_coords.x).attr("cy", new_coords.y);
+          //   d3.select(this).attr("cx", new_coords.x).attr("cy", new_coords.y);
+          // });
+          //   map.once('mouseup', () => {
+          //     map.off('mousemove', (e) => {
+          //   // e.preventDefault();
+          //   let new_coords = project([e.lngLat.lng, e.lngLat.lat])
+          //   // console.log(new_coords)
+          //   // d3.select(this).raise().style("fill", "lightblue");
+          //   // d3.select(this).attr("cx", new_coords.x).attr("cy", new_coords.y);
+          //   d3.select(this).attr("cx", new_coords.x).attr("cy", new_coords.y);
+          // })
+
+          //   });
+          // })
+          // )
+        })
+        .on("drag", function (event, d) {
+          //console.log("hi")
+          // map.on('mousemove', (e) => {
+          //   // e.preventDefault();
+          //   let new_coords = project([e.lngLat.lng, e.lngLat.lat]);
+          //   d3.select(this).raise().style("fill", "lightblue");
+          //   d3.select(this).attr("cx", new_coords.x).attr("cy", new_coords.y);
+          // });
+          if (d3.select(this).attr("id") === "draggableCircleA") {
+            circleA = [event.x, event.y]
+          }
+          if (d3.select(this).attr("id") === "draggableCircleB") {
+            circleB = [event.x, event.y]
+          }
+          // d3.select(this).attr("cx", new_coords.x).attr("cy", new_coords.y);
+          d3.select(this).attr("cx", event.x).attr("cy", event.y);
+        })
+        .on('end', function (event, d) {
+          // map.off('mousemove', (e) => console.log(e))
+          // map.on('mousemove', (e) => console.log(e.lngLat))
+          // map.off('mousemove', (e) => {
+          //   // e.preventDefault();
+          //   let new_coords =  project([e.lngLat.lng, e.lngLat.lat])
+          //   // console.log(new_coords)
+          //   // d3.select(this).raise().style("fill", "lightblue");
+          //   // d3.select(this).attr("cx", new_coords.x).attr("cy", new_coords.y);
+          //   d3.select(this).attr("cx", new_coords.x).attr("cy", new_coords.y);
+          // })
+          d3.select(this).lower();
+          d3.select(this).style("opacity", 0.3).style("fill", "gray");
+
+          // call function that will handle intersection
+          updateIntersection();
+        });
+
+
       let circleADrawn = svg
         // .selectAll(".draggableCircle")
         // .data(circleA)
@@ -244,8 +312,8 @@
         .style("opacity", 0.5)
         .style("fill", "yellow")
         .attr("stroke", "black")
-        .attr('cx', d => window.innerWidth - 50 - 50)
-        .attr('cy', d => '100')
+        .attr('cx', d => project(circleA).x)
+        .attr('cy', d => project(circleA).y)
         .attr('r', d => '50')
         .call(drag);
 
@@ -260,16 +328,49 @@
         .style("opacity", 0.5)
         .style("fill", "yellow")
         .attr("stroke", "black")
-        .attr('cx', d => window.innerWidth - 50 - 50)
-        .attr('cy', d => '250')
+        .attr('cx', d => project(circleB).x)
+        .attr('cy', d => project(circleB).y)
         .attr('r', d => '50')
         .call(drag);
 
       showResults(data);
       render();
 
-      // Update circles function
+      //Update intersection function
+      function updateIntersection() {
+        // selectall circles -> filter 
 
+        let circlesToFilter = svg.selectAll("circle").filter(d => {
+          // let new_pos = project(d.coordinates)
+          if (d) {
+            let new_pos = project(d.coordinates)
+            let circleA = [d3.select("#draggableCircleA").attr("cx"), d3.select("#draggableCircleA").attr("cy"), d3.select("#draggableCircleA").attr("r")]
+            let circleB = [d3.select("#draggableCircleB").attr("cx"), d3.select("#draggableCircleB").attr("cy"), d3.select("#draggableCircleB").attr("r")]
+            // console.log(circleA)
+            if (Math.sqrt((new_pos.x - circleA[0]) ** 2 + (new_pos.y - circleA[1])**2) <= circleA[2]) {
+              if (Math.sqrt((new_pos.x - circleB[0]) ** 2 + (new_pos.y - circleB[1])**2) <= circleB[2]) {
+                return true
+              }
+            }
+            return false
+            // console.log(new_pos)
+            // console.log(d3.select("#draggableCircleA").attr("r"))
+          }
+        })
+        console.log(circlesToFilter)
+        svg.selectAll("circle").style("fill", "gray")
+        d3.select("#draggableCircleA").style("opacity", 0.5)
+          .style("fill", "yellow")
+          .attr("stroke", "black")
+        d3.select("#draggableCircleB").style("opacity", 0.5)
+          .style("fill", "yellow")
+          .attr("stroke", "black")
+        circlesToFilter.style("fill", "darkblue")
+        // change their style fill to blue
+        // change the results??
+      }
+
+      // Update circles function
       function updateDots(priceFilters, ratingFilters) {
         let tempData = data;
 
@@ -397,11 +498,13 @@
     }
 
     d3.selectAll("input[name='circleA']").on("input", function () {
-      d3.select("#draggableCircleA").attr("r", this.value)
+      d3.select("#draggableCircleA").attr("r", this.value);
+      updateIntersection();
     });
 
     d3.selectAll("input[name='circleB']").on("input", function () {
-      d3.select("#draggableCircleB").attr("r", this.value)
+      d3.select("#draggableCircleB").attr("r", this.value);
+      updateIntersection();
     });
 
     // Inspiration from https://franksh.com/posts/d3-mapboxgl/
