@@ -8,6 +8,11 @@
   <script src="https://api.tiles.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.js"></script>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://unpkg.com/d3-v6-tip@1.0.6/build/d3-v6-tip.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3-array@3"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3-geo@3"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3-dispatch@3"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3-selection@3"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3-drag@3"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/bumbeishvili/d3-tip-for-v6@4/d3-tip.min.css">
   <link href="https://api.tiles.mapbox.com/mapbox-gl-js/v0.53.0/mapbox-gl.css" rel="stylesheet" />
   <style>
@@ -46,25 +51,42 @@
 <body>
   <div id="map"></div>
   <div id="filters">
-    <h2>CS 448B Assignment 3</h2>
+    <h2>Bay Area Coffee Shops, Cafes, and Bubble Tea Shops</h2>
+    <h4>CS 448B Assignment 3 <br /> Mhar Tenorio</h4>
 
     <p>This shows all Coffee Shops, Cafes, and Bubble Tea Shops in the Bay Area sourced from Yelp.</p>
     <p>You can visit the Yelp site for each store by clicking any points on the map. Use the two circles to show shops
       that lie in the intersection of the two circles. You can also filter your data using the following
       settings below.</p>
     <h3>Filters</h3>
-    <h4>Price Range &#128176;</h4>
-    <input type="checkbox" name="price" value="$">$</input><br />
-    <input type="checkbox" name="price" value="$$">$$</input><br />
-    <input type="checkbox" name="price" value="$$$">$$$</input><br />
-    <input type="checkbox" name="price" value="$$$$">$$$$</input><br />
-    <!-- <input type="checkbox" name="price" value="All" checked>View All</input><br /> -->
-    <h4>Ratings &#11088;</h4>
-    <input type="checkbox" name="rating" value="4">4.0 - 5.0</input><br />
-    <input type="checkbox" name="rating" value="3">3.0 - 3.99</input><br />
-    <input type="checkbox" name="rating" value="2">2.0 - 2.99</input><br />
-    <input type="checkbox" name="rating" value="1">1.0 - 1.99</input><br />
-    <input type="checkbox" name="rating" value="0">0 - 0.99</input><br />
+    <h4>Radius Sliders</h4>
+    <p>Circle 1:</p>
+    <input type="range" min="1" max="100" value="50" class="slider" id="circleA" name="circleA"
+      oninput="this.nextElementSibling.value = this.value + ' miles'" />
+    <output>50 miles</output>
+    <p>Circle 2:</p>
+    <input type="range" min="1" max="100" value="50" class="slider" id="circleB" name="circleB"
+      oninput="this.nextElementSibling.value = this.value + ' miles'" />
+    <output>50 miles</output>
+    <div style='display:flex;flex-direction:row;column-gap:32px'>
+
+      <!-- <input type="checkbox" name="price" value="All" checked>View All</input><br /> -->
+      <div>
+        <h4>&#11088; Ratings</h4>
+        <input type="checkbox" name="rating" value="4">4.0 - 5.0</input><br />
+        <input type="checkbox" name="rating" value="3">3.0 - 3.99</input><br />
+        <input type="checkbox" name="rating" value="2">2.0 - 2.99</input><br />
+        <input type="checkbox" name="rating" value="1">1.0 - 1.99</input><br />
+        <input type="checkbox" name="rating" value="0">0 - 0.99</input><br />
+      </div>
+      <div>
+        <h4>&#128176; Price Range</h4>
+        <input type="checkbox" name="price" value="$">$</input><br />
+        <input type="checkbox" name="price" value="$$">$$</input><br />
+        <input type="checkbox" name="price" value="$$$">$$$</input><br />
+        <input type="checkbox" name="price" value="$$$$">$$$$</input><br />
+      </div>
+    </div>
     <!-- <input type="checkbox" name="rating" value="All" checked>View All</input><br /> -->
     <h3>Results</h3>
   </div>
@@ -75,10 +97,11 @@
     map = new mapboxgl.Map({
       container: "map", // container id
       style: "mapbox://styles/mapbox/light-v9", // stylesheet location
-      zoom: 9, // starting zoom
+      zoom: 8.75, // starting zoom
       center: [-122.3239, 37.6955],
-      // interactive: false,
+      interactive: false,
     });
+    map.dragRotate.disable();
     map.on("viewreset", render);
     map.on("move", render);
     map.on("moveend", render);
@@ -118,9 +141,40 @@
       })
       .attr("style", "z-index: 1000");
 
+    let circleA = { x: 0, y: 0, r: 1000 }
+
+    // D3 Documentation: https://observablehq.com/@d3/circle-dragging-i
+    var drag = d3.drag()
+      .on('start', function (event, d) {
+        d3.select(this).raise().style("fill", "lightblue");
+      })
+      .on("drag", function (event, d) {
+        d3.select(this).attr("cx", event.x).attr("cy", event.y);
+      })
+      .on('end', function (event, d) {
+        d3.select(this).lower();
+        d3.select(this).style("fill", "yellow");
+      });
+
+    let zoom = d3.zoom()
+      .on('zoom', handleZoom);
+
+    function handleZoom(e) {
+      //console.log(e.transform)
+      d3.select('#draggableCircleA')
+        .attr('transform', e.transform);
+    }
+
+    function convertToKm(val) {
+      var circumference = 6371000 * Math.PI * 2;
+      var angle = val / circumference * 360;
+      return angle;
+    }
+
 
     function createDots(data) {
       var container = map.getCanvasContainer();
+      console.log(window.innerWidth)
       // let coordinates = data.map(d => d.coordinates);
       // let tip = d3.tip().attr('class', 'd3-tip')
 
@@ -144,9 +198,11 @@
         .attr("r", 5)
         .style("opacity", 0.3)
         .style("fill", "gray")
+        // .style("z-index", 12)
         // .on('mouseover', tooltip.show)
         // .on('mouseout', tooltip.hide);
         .on("mouseover", function (e, d) {
+          // d3.select(this).raise();
           d3.select(this).style("fill", "red");
           d3.select(this).style("cursor", "pointer");
           tooltip.show(e, d);
@@ -159,11 +215,60 @@
           tooltip.hide(e, d);
         });
 
+      // Add the two circles
 
 
-      showResults(data)
-      render()
+      // let circle1 = d3.geoCircle()
+      //   .center([-122.3239, 37.6955])
+      //   .radius(1000);
+      //   // 600 / (6371 * Math.PI * 2) * 360
+      // const path = d3.geoPath();
 
+      //let path = d3.geoPath().projection(projection);
+
+      // var svg2 = d3
+      //   .select(container)
+      //   .append("svg")
+      //   .attr("width", "100%")
+      //   .attr("height", "100%")
+      //   .style("position", "absolute")
+      //   .style("z-index", 9);
+
+      let circleADrawn = svg
+        // .selectAll(".draggableCircle")
+        // .data(circleA)
+        // .enter()
+        .append("circle")
+        .attr("id", "draggableCircleA")
+        .attr("r", 100)
+        .style("opacity", 0.5)
+        .style("fill", "yellow")
+        .attr("stroke", "black")
+        .attr('cx', d => window.innerWidth - 50 - 50)
+        .attr('cy', d => '100')
+        .attr('r', d => '50')
+        .call(drag);
+
+
+      let circleBDrawn = svg
+        // .selectAll(".draggableCircle")
+        // .data(circleA)
+        // .enter()
+        .append("circle")
+        .attr("id", "draggableCircleB")
+        .attr("r", 100)
+        .style("opacity", 0.5)
+        .style("fill", "yellow")
+        .attr("stroke", "black")
+        .attr('cx', d => window.innerWidth - 50 - 50)
+        .attr('cy', d => '250')
+        .attr('r', d => '50')
+        .call(drag);
+
+      showResults(data);
+      render();
+
+      // Update circles function
 
       function updateDots(priceFilters, ratingFilters) {
         let tempData = data;
@@ -291,9 +396,27 @@
       });
     }
 
+    d3.selectAll("input[name='circleA']").on("input", function () {
+      d3.select("#draggableCircleA").attr("r", this.value)
+    });
+
+    d3.selectAll("input[name='circleB']").on("input", function () {
+      d3.select("#draggableCircleB").attr("r", this.value)
+    });
+
     // Inspiration from https://franksh.com/posts/d3-mapboxgl/
     function project(d) {
       return map.project(new mapboxgl.LngLat(d[0], d[1]));
+    }
+
+    function renderCircle1() {
+      d3.selectAll(".circle")
+        .attr("cx", function (d) {
+          return project(d.coordinates).x;
+        })
+        .attr("cy", function (d) {
+          return project(d.coordinates).y;
+        });
     }
 
     function render() {
