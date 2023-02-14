@@ -45,6 +45,11 @@
         10.7px 10.9px 17.9px rgba(0, 0, 0, 0.018),
         48px 49px 80px rgba(0, 0, 0, 0.03);
     }
+    .search {
+      width: 95%;
+      height: 20px;
+      padding: 8px;
+    }
   </style>
 </head>
 
@@ -54,11 +59,12 @@
     <h2>Bay Area Coffee Shops, Cafes, and Bubble Tea Shops</h2>
     <h4>CS 448B Assignment 3 <br /> Mhar Tenorio</h4>
 
-    <p>This shows all Coffee Shops, Cafes, and Bubble Tea Shops in the Bay Area sourced from Yelp.</p>
-    <p>This visualization will show shops that lie in the intersection of the two circles and satisfies the
-      price and rating constraints. You can visit the Yelp site for each store by clicking any points on the map. </p>
+    <!-- <p>This shows all Coffee Shops, Cafes, and Bubble Tea Shops in the Bay Area sourced from Yelp.</p> -->
+    <!-- <p>This visualization will show shops that lie in the intersection of the two circles and satisfies the
+      price and rating constraints. You can visit the Yelp site for each store by clicking any points on the map. </p> -->
     <h3>Filters</h3>
     <h4>Radius Sliders</h4>
+    
     <p>Circle 1:</p>
     <input type="range" min="1" max="50" value="25" class="slider" id="circleA" name="circleA"
       oninput="this.nextElementSibling.value = this.value + ' miles'" />
@@ -86,7 +92,8 @@
         <input type="checkbox" name="price" value="$$$$">$$$$</input><br />
       </div>
     </div>
-    <!-- <input type="checkbox" name="rating" value="All" checked>View All</input><br /> -->
+    <h4>&#128269; Search by name, category, or location</h4>
+    <input type="text" name="search" placeholder="Hit enter to search..." class="search">
     <h3>Results</h3>
   </div>
   <script>
@@ -126,7 +133,7 @@
         let htmlStr = "<div style='display:flex;flex-direction:row;column-gap:8px'>"
 
         if (d.image_url) {
-          htmlStr += "<img src='" + d.image_url + "' width='64px' height='64px' onerror='this.onerror=null;this.src=''/>"
+          htmlStr += "<img src='" + d.image_url + "' width='84px' height='84px' onerror='this.onerror=null;this.src=''/>"
         }
         htmlStr += "<div><strong>" + d.name + "</strong>";
         if (d.rating) {
@@ -135,7 +142,20 @@
         if (d.price) {
           htmlStr += "<br/><i>&#128176; Price: </i> <span>" + d.price + " " + '' + "</span>"
         }
+        if (d.categories) {
+          let newCat = d.categories.replaceAll(",", ", ").replaceAll('_', ' ');
+          newCat = newCat.charAt(0).toUpperCase() + newCat.slice(1);
+          htmlStr += "<br/><i>&#127869; Type: </i> <span>" + newCat + " " + '' + "</span>"
+        }
         htmlStr += "</div> </div>"
+        // var parsedAddr = "";
+        // try {
+        //   let fixedaddr = d.address.replaceAll('""', "'").replaceAll(/'/g, '"');
+        //   parsedAddr = JSON.parse(JSON.parse(JSON.stringify(fixedaddr))).join(" ");
+        //   htmlStr += "<div><i>&#128205;: " + parsedAddr + "</div>"
+        // } catch {
+        //   parsedAddr = ""
+        // }
         return htmlStr
       })
       .attr("style", "z-index: 1000");
@@ -233,6 +253,7 @@
         .attr('cx', d => project(circleA).x)
         .attr('cy', d => project(circleA).y)
         .attr('r', d => convertPixel(10))
+        .lower()
         .call(drag);
 
 
@@ -249,6 +270,7 @@
         .attr('cx', d => project(circleB).x)
         .attr('cy', d => project(circleB).y)
         .attr('r', d => convertPixel(10))
+        .lower()
         .call(drag);
 
       showResults(data, true);
@@ -291,8 +313,9 @@
       }
 
       // Update circles function
-      function updateDots(priceFilters, ratingFilters) {
+      function updateDots(priceFilters, ratingFilters, searchText) {
         let tempData = data;
+        
 
         tempData = tempData.filter(d => {
           let numFalse = 0;
@@ -329,6 +352,13 @@
             return false;
           }
         })
+        
+        if (searchText) {
+          tempData = tempData.filter(d => {
+            searchText = searchText.toLowerCase()
+            return d.name.toLowerCase().includes(searchText) || d.address.toLowerCase().includes(searchText) || d.categories.toLowerCase().includes(searchText)
+          })
+        }
 
         d3.selectAll(".circle").remove();
         d3.selectAll("#resultsDiv").remove();
@@ -357,6 +387,7 @@
         let newData = updateIntersection();
         const filteredArray = newData.filter(value => tempData.includes(value));
         showResults(filteredArray);
+        // showResults(tempData)
         render();
       }
 
@@ -371,11 +402,18 @@
         resultsDiv.text("Showing " + data.length + " results");
         for (let i = 0; i < data.length; i++) {
           var singleData = resultsDiv.append("div").attr("style", "margin-bottom: 16px")
+            // .append('h4').text(data[i].name)
             .append('h4').text(data[i].name)
             .append("body").attr("style", "font-weight: 100").html("Ratings: " + data[i].rating + " &#11088; (" + data[i].review_count + ")")
 
           if (data[i].price) {
             singleData.append("body").attr("style", "font-weight: 100").text("Price range: " + data[i].price)
+          }
+
+          if (data[i].categories) {
+            let newCat = data[i].categories.replaceAll(",", ", ").replaceAll('_', ' ');
+            newCat = newCat.charAt(0).toUpperCase() + newCat.slice(1);
+            singleData.append("body").attr("style", "font-weight: 100").html("&#127869; Type: " + newCat)
           }
 
           if (data[i].address) {
@@ -387,10 +425,14 @@
             } catch {
               parsedAddr = ""
             }
-            singleData.append("body").attr("style", "font-weight: 100").text(parsedAddr)
+            singleData.append("body").attr("style", "font-weight: 100").html("&#128205; " + parsedAddr)
 
             // }
 
+          }
+          
+          if (data[i].url) {
+            singleData.append("a").attr("href", data[i].url).attr("target", "_blank").html("View More on Yelp")
           }
           // singleData.html(function (e, d) {
           //   //console.log(data[i])
@@ -427,6 +469,10 @@
       d3.selectAll("input[name='rating']").on("change", function () {
         ratingFilters[this.value] = this.checked;
         updateDots(priceFilters, ratingFilters);
+      });
+
+      d3.selectAll("input[name='search']").on("change", function () {
+        updateDots(priceFilters, ratingFilters, this.value);
       });
 
       d3.selectAll("input[name='circleA']").on("input", function () {
