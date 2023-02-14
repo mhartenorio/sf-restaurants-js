@@ -55,19 +55,18 @@
     <h4>CS 448B Assignment 3 <br /> Mhar Tenorio</h4>
 
     <p>This shows all Coffee Shops, Cafes, and Bubble Tea Shops in the Bay Area sourced from Yelp.</p>
-    <p>You can visit the Yelp site for each store by clicking any points on the map. Use the two circles to show shops
-      that lie in the intersection of the two circles. You can also filter your data using the following
-      settings below.</p>
+    <p>This visualization will show shops that lie in the intersection of the two circles and satisfies the
+      price and rating constraints. You can visit the Yelp site for each store by clicking any points on the map. </p>
     <h3>Filters</h3>
     <h4>Radius Sliders</h4>
     <p>Circle 1:</p>
-    <input type="range" min="1" max="100" value="50" class="slider" id="circleA" name="circleA"
+    <input type="range" min="1" max="50" value="25" class="slider" id="circleA" name="circleA"
       oninput="this.nextElementSibling.value = this.value + ' miles'" />
-    <output>50 miles</output>
+    <output>25 miles</output>
     <p>Circle 2:</p>
-    <input type="range" min="1" max="100" value="50" class="slider" id="circleB" name="circleB"
+    <input type="range" min="1" max="50" value="25" class="slider" id="circleB" name="circleB"
       oninput="this.nextElementSibling.value = this.value + ' miles'" />
-    <output>50 miles</output>
+    <output>25 miles</output>
     <div style='display:flex;flex-direction:row;column-gap:32px'>
 
       <!-- <input type="checkbox" name="price" value="All" checked>View All</input><br /> -->
@@ -99,11 +98,11 @@
       style: "mapbox://styles/mapbox/light-v9", // stylesheet location
       zoom: 8.75, // starting zoom
       center: [-122.3239, 37.6955],
-      // interactive: false,
+      interactive: false,
     });
     map.dragRotate.disable();
     map.on("viewreset", render);
-    
+
     map.on("move", render);
     map.on("moveend", render);
 
@@ -116,7 +115,6 @@
         coordArr[1] = parseFloat(coordArr[1]);
         d.coordinates = coordArr.reverse();
         d.rating = parseFloat(d.rating);
-        //console.log(d)
         return d;
       }
     ).then(createDots);
@@ -143,31 +141,22 @@
       .attr("style", "z-index: 1000");
 
     let circleA = [-122.3239, 37.6955];
-    let circleB = [-122.1239, 37.6955];
+    let circleB = [-122.0239, 37.6955];
 
-
-
-    let zoom = d3.zoom()
-      .on('zoom', handleZoom);
-
-    function handleZoom(e) {
-      //console.log(e.transform)
-      d3.select('#draggableCircleA')
-        .attr('transform', e.transform);
+    function convertPixel(val) {
+      return 2 ^ (9) * (val);
     }
 
-    function convertToKm(val) {
-      var circumference = 6371000 * Math.PI * 2;
-      var angle = val / circumference * 360;
-      return angle;
-    }
+    // let zoom = d3.zoom()
+    //   .on('zoom', handleZoom);
+
+    // function handleZoom(e) {
+    //   let cur = d3.select('#draggableCircleA').attr('cx');
+    // }
 
 
     function createDots(data) {
       var container = map.getCanvasContainer();
-      console.log(window.innerWidth)
-      // let coordinates = data.map(d => d.coordinates);
-      // let tip = d3.tip().attr('class', 'd3-tip')
 
       var svg = d3
         .select(container)
@@ -189,14 +178,9 @@
         .attr("r", 5)
         .style("opacity", 0.3)
         .style("fill", "gray")
-        // .style("z-index", 12)
-        // .on('mouseover', tooltip.show)
-        // .on('mouseout', tooltip.hide);
         .on("mouseover", function (e, d) {
-          // d3.select(this).raise();
           d3.select(this).style("fill", "red");
           d3.select(this).style("cursor", "pointer");
-          // console.log(d3.select(this).attr("cx"))
           tooltip.show(e, d);
         })
         .on("mousedown", function (e, d) {
@@ -208,88 +192,30 @@
         });
 
       // Add the two circles
-
-
-      // let circle1 = d3.geoCircle()
-      //   .center([-122.3239, 37.6955])
-      //   .radius(1000);
-      //   // 600 / (6371 * Math.PI * 2) * 360
-      // const path = d3.geoPath();
-
-      //let path = d3.geoPath().projection(projection);
-
-      // var svg2 = d3
-      //   .select(container)
-      //   .append("svg")
-      //   .attr("width", "100%")
-      //   .attr("height", "100%")
-      //   .style("position", "absolute")
-      //   .style("z-index", 9);
-
       // D3 Documentation: https://observablehq.com/@d3/circle-dragging-i
       var drag = d3.drag()
         .on('start', function (event, d) {
           d3.select(this).raise().style("fill", "lightblue");
-          // map.on('touchmove', (e) => console.log(e.lngLat))
-          // d3.select(this).call(() => 
-          //   map.on('mousedown', (e) => {
-          //   // Prevent the default map drag behavior.
-          //   // e.preventDefault();
-          //   console.log("start")
-          //   map.on('mousemove', (e) => {
-          //   // e.preventDefault();
-          //   let new_coords = project([e.lngLat.lng, e.lngLat.lat])
-          //   // console.log(new_coords)
-          //   // d3.select(this).raise().style("fill", "lightblue");
-          //   // d3.select(this).attr("cx", new_coords.x).attr("cy", new_coords.y);
-          //   d3.select(this).attr("cx", new_coords.x).attr("cy", new_coords.y);
-          // });
-          //   map.once('mouseup', () => {
-          //     map.off('mousemove', (e) => {
-          //   // e.preventDefault();
-          //   let new_coords = project([e.lngLat.lng, e.lngLat.lat])
-          //   // console.log(new_coords)
-          //   // d3.select(this).raise().style("fill", "lightblue");
-          //   // d3.select(this).attr("cx", new_coords.x).attr("cy", new_coords.y);
-          //   d3.select(this).attr("cx", new_coords.x).attr("cy", new_coords.y);
-          // })
-
-          //   });
-          // })
-          // )
         })
         .on("drag", function (event, d) {
-          //console.log("hi")
-          // map.on('mousemove', (e) => {
-          //   // e.preventDefault();
-          //   let new_coords = project([e.lngLat.lng, e.lngLat.lat]);
-          //   d3.select(this).raise().style("fill", "lightblue");
-          //   d3.select(this).attr("cx", new_coords.x).attr("cy", new_coords.y);
-          // });
           if (d3.select(this).attr("id") === "draggableCircleA") {
             circleA = [event.x, event.y]
           }
           if (d3.select(this).attr("id") === "draggableCircleB") {
             circleB = [event.x, event.y]
           }
-          // d3.select(this).attr("cx", new_coords.x).attr("cy", new_coords.y);
           d3.select(this).attr("cx", event.x).attr("cy", event.y);
         })
         .on('end', function (event, d) {
-          // map.off('mousemove', (e) => console.log(e))
-          // map.on('mousemove', (e) => console.log(e.lngLat))
-          // map.off('mousemove', (e) => {
-          //   // e.preventDefault();
-          //   let new_coords =  project([e.lngLat.lng, e.lngLat.lat])
-          //   // console.log(new_coords)
-          //   // d3.select(this).raise().style("fill", "lightblue");
-          //   // d3.select(this).attr("cx", new_coords.x).attr("cy", new_coords.y);
-          //   d3.select(this).attr("cx", new_coords.x).attr("cy", new_coords.y);
-          // })
-          d3.select(this).lower();
+          // Always have the smaller circle on top for easier dragging
+          if (d3.select("#draggableCircleA").attr('r') >= d3.select("#draggableCircleB").attr('r')) {
+            d3.select("#draggableCircleA").lower();
+            d3.select("#draggableCircleB").lower();
+          } else {
+            d3.select("#draggableCircleB").lower();
+            d3.select("#draggableCircleA").lower();
+          }
           d3.select(this).style("opacity", 0.3).style("fill", "gray");
-
-          // call function that will handle intersection
           updateIntersection();
         });
 
@@ -306,7 +232,7 @@
         .attr("stroke", "black")
         .attr('cx', d => project(circleA).x)
         .attr('cy', d => project(circleA).y)
-        .attr('r', d => '50')
+        .attr('r', d => convertPixel(10))
         .call(drag);
 
 
@@ -322,10 +248,10 @@
         .attr("stroke", "black")
         .attr('cx', d => project(circleB).x)
         .attr('cy', d => project(circleB).y)
-        .attr('r', d => '50')
+        .attr('r', d => convertPixel(10))
         .call(drag);
 
-      showResults(data);
+      showResults(data, true);
       render();
 
       //Update intersection function
@@ -351,14 +277,17 @@
         // console.log(circlesToFilter)
         svg.selectAll("circle").style("fill", "gray")
         circlesToFilter.style("fill", "blue")
+        let newData = circlesToFilter.data()
+        showResults(newData);
+        // render();
         d3.select("#draggableCircleA").style("opacity", 0.3)
           .style("fill", "gray")
           .attr("stroke", "black")
         d3.select("#draggableCircleB").style("opacity", 0.3)
           .style("fill", "gray")
           .attr("stroke", "black")
-        
-        
+        return newData;
+
       }
 
       // Update circles function
@@ -425,31 +354,42 @@
             tooltip.hide(e, d);
           });
 
-        updateIntersection();
-        showResults(tempData);
+        let newData = updateIntersection();
+        const filteredArray = newData.filter(value => tempData.includes(value));
+        showResults(filteredArray);
         render();
       }
 
-      function showResults(data) {
+      function showResults(data, firstTimeRender) {
         //console.log(data)
-        let resultsDiv = d3.select("#filters").append("div").attr("id", "resultsDiv")
+        d3.select("#resultsDiv").remove();
+        let resultsDiv = d3.select("#filters").append("div").attr("id", "resultsDiv");
+        if (firstTimeRender) {
+          resultsDiv.text("Start filtering by moving the circles and playing around with the filters and shops that satisfy all the filters will appear below!");
+          return;
+        }
+        resultsDiv.text("Showing " + data.length + " results");
         for (let i = 0; i < data.length; i++) {
           var singleData = resultsDiv.append("div").attr("style", "margin-bottom: 16px")
             .append('h4').text(data[i].name)
             .append("body").attr("style", "font-weight: 100").html("Ratings: " + data[i].rating + " &#11088; (" + data[i].review_count + ")")
-          // .append("body").attr("style", "font-weight: 100").text(data[i].address)
 
           if (data[i].price) {
             singleData.append("body").attr("style", "font-weight: 100").text("Price range: " + data[i].price)
           }
 
           if (data[i].address) {
-            // let fixedaddr = data[i].address.replaceAll("O'", "O ").replaceAll('""', "'")
-            // let addr = JSON.parse(JSON.stringify(fixedaddr));
-            // console.log(addr)
-            // str = addr.replaceAll(/'/g, '"')
-            // console.log(typeof JSON.parse(str))
-            singleData.append("body").attr("style", "font-weight: 100").text(data[i].address)
+            var parsedAddr = "";
+            try {
+              let fixedaddr = data[i].address.replaceAll('""', "'").replaceAll(/'/g, '"');
+              parsedAddr = JSON.parse(JSON.parse(JSON.stringify(fixedaddr))).join(" ");
+
+            } catch {
+              parsedAddr = ""
+            }
+            singleData.append("body").attr("style", "font-weight: 100").text(parsedAddr)
+
+            // }
 
           }
           // singleData.html(function (e, d) {
@@ -490,17 +430,32 @@
       });
 
       d3.selectAll("input[name='circleA']").on("input", function () {
-      d3.select("#draggableCircleA").attr("r", this.value);
-      updateIntersection();
-    });
+        d3.select("#draggableCircleA").attr("r", convertPixel(this.value));
+        if (this.value >= d3.select("#draggableCircleB").attr('r')) {
+          d3.select("#draggableCircleA").lower();
+          d3.select("#draggableCircleB").lower();
+        } else {
+          d3.select("#draggableCircleB").lower();
+          d3.select("#draggableCircleA").lower();
+        }
 
-    d3.selectAll("input[name='circleB']").on("input", function () {
-      d3.select("#draggableCircleB").attr("r", this.value);
-      updateIntersection();
-    });
+        updateIntersection();
+      });
+
+      d3.selectAll("input[name='circleB']").on("input", function () {
+        d3.select("#draggableCircleB").attr("r", convertPixel(this.value));
+        if (this.value <= d3.select("#draggableCircleA").attr('r')) {
+          d3.select("#draggableCircleA").lower();
+          d3.select("#draggableCircleB").lower();
+        } else {
+          d3.select("#draggableCircleB").lower();
+          d3.select("#draggableCircleA").lower();
+        }
+        updateIntersection();
+      });
     }
 
-    
+
 
     // Inspiration from https://franksh.com/posts/d3-mapboxgl/
     function project(d) {
