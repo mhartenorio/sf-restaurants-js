@@ -500,13 +500,13 @@
       d3.selectAll("input[name='zoom']").on("change", function () {
         let ifZoom = this.checked;
         if (ifZoom) {
-          window.alert("This will make the two circles correspond to pixels, instead of miles.");
           map.scrollZoom.enable();
           map.boxZoom.enable();
           d3.select("#circleA").attr("oninput", "this.nextElementSibling.value = this.value + ' pixels'");
           d3.select("#circleB").attr("oninput", "this.nextElementSibling.value = this.value + ' pixels'");
           let curText = d3.selectAll("output").text();
           d3.selectAll("output").text(curText.replace("miles", "pixels"));
+          window.alert("This will make the two circles correspond to pixels, instead of miles.");
         } else {
           map.setZoom(8.75);
           map.setCenter([-122.3239, 37.6955]);
