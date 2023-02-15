@@ -45,10 +45,28 @@
         10.7px 10.9px 17.9px rgba(0, 0, 0, 0.018),
         48px 49px 80px rgba(0, 0, 0, 0.03);
     }
+
     .search {
       width: 95%;
       height: 20px;
       padding: 8px;
+    }
+
+    #zoom {
+      position: fixed;
+      overflow-y: auto;
+      bottom: 24px;
+      right: 24px;
+      /* width: 300px; */
+      padding: 16px;
+      /* height: calc(100vh - 24px - 24px - 24px - 24px); */
+      background-color: white;
+      z-index: 100;
+      border-radius: 16px;
+      box-shadow:
+        3.2px 3.3px 5.3px rgba(0, 0, 0, 0.012),
+        10.7px 10.9px 17.9px rgba(0, 0, 0, 0.018),
+        48px 49px 80px rgba(0, 0, 0, 0.03);
     }
   </style>
 </head>
@@ -62,10 +80,11 @@
 
     <!-- <p>This shows all Coffee Shops, Cafes, and Bubble Tea Shops in the Bay Area sourced from Yelp.</p> -->
     <p>This visualization will show shops that lie in the intersection of the two circles and satisfies the
-      price, rating, and search constraints. You can visit the Yelp site for each store by clicking any points on the map. </p>
+      price, rating, and search constraints. You can visit the Yelp site for each store by clicking any points on the
+      map. </p>
     <h3>Filters</h3>
     <h4>Radius Sliders</h4>
-    
+
     <p>Circle 1:</p>
     <input type="range" min="1" max="50" value="10" class="slider" id="circleA" name="circleA"
       oninput="this.nextElementSibling.value = this.value + ' miles'" />
@@ -97,18 +116,23 @@
     <input type="text" name="search" placeholder="Hit enter to search..." class="search">
     <h3>Results</h3>
   </div>
+  <div id="zoom">
+    <input type="checkbox" name="zoom">Make map zoomable</input>
+  </div>
   <script>
 
     mapboxgl.accessToken = "pk.eyJ1IjoibWhhcnRlbm9yaW8iLCJhIjoiY2xkeXh0MzRnMG9tdjNwb3ZzdmI5aDlxbCJ9.QeyPN0ZvTHLHTH4oDqFx6g";
     var map;
     map = new mapboxgl.Map({
-      container: "map", // container id
-      style: "mapbox://styles/mapbox/light-v9", // stylesheet location
-      zoom: 8.75, // starting zoom
+      container: "map", 
+      style: "mapbox://styles/mapbox/light-v9", 
+      zoom: 8.75, 
       center: [-122.3239, 37.6955],
-      interactive: false,
+      // interactive: false,
     });
     map.dragRotate.disable();
+    map.scrollZoom.disable();
+    map.boxZoom.disable();
     map.on("viewreset", render);
 
     map.on("move", render);
@@ -164,6 +188,7 @@
     let circleA = [-122.3239, 37.6955];
     let circleB = [-122.0239, 37.6955];
 
+    // Approximation from https://blog.madebylotus.com/blog/creating-static-distance-circles-in-map-box-how-many-miles-are-in-a-pixel 
     function convertPixel(val) {
       return 2 ^ (9) * (val);
     }
@@ -240,7 +265,7 @@
           updateIntersection();
         });
 
-
+      //d3.geopath()(generateCircle)
       let circleADrawn = svg
         // .selectAll(".draggableCircle")
         // .data(circleA)
@@ -316,7 +341,7 @@
       // Update circles function
       function updateDots(priceFilters, ratingFilters, searchText) {
         let tempData = data;
-        
+
 
         tempData = tempData.filter(d => {
           let numFalse = 0;
@@ -353,7 +378,7 @@
             return false;
           }
         })
-        
+
         if (searchText) {
           tempData = tempData.filter(d => {
             searchText = searchText.toLowerCase()
@@ -431,7 +456,7 @@
             // }
 
           }
-          
+
           if (data[i].url) {
             singleData.append("a").attr("href", data[i].url).attr("target", "_blank").html("View More on Yelp")
           }
@@ -470,6 +495,29 @@
       d3.selectAll("input[name='rating']").on("change", function () {
         ratingFilters[this.value] = this.checked;
         updateDots(priceFilters, ratingFilters);
+      });
+
+      d3.selectAll("input[name='zoom']").on("change", function () {
+        let ifZoom = this.checked;
+        if (ifZoom) {
+          window.alert("This will make the two circles correspond to pixels, instead of miles.");
+          map.scrollZoom.enable();
+          map.boxZoom.enable();
+          d3.select("#circleA").attr("oninput", "this.nextElementSibling.value = this.value + ' pixels'");
+          d3.select("#circleB").attr("oninput", "this.nextElementSibling.value = this.value + ' pixels'");
+          let curText = d3.selectAll("output").text();
+          d3.selectAll("output").text(curText.replace("miles", "pixels"));
+        } else {
+          map.setZoom(8.75);
+          map.setCenter([-122.3239, 37.6955]);
+          map.scrollZoom.disable();
+          map.boxZoom.disable();
+          d3.select("#circleA").attr("oninput", "this.nextElementSibling.value = this.value + ' miles'");
+          d3.select("#circleB").attr("oninput", "this.nextElementSibling.value = this.value + ' miles'");
+          let curText = d3.selectAll("output").text();
+          d3.selectAll("output").text(curText.replace("pixels", "miles"));
+        }
+        // updateDots(priceFilters, ratingFilters);
       });
 
       d3.selectAll("input[name='search']").on("change", function () {
